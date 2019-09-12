@@ -1,7 +1,11 @@
 package main
 
 /*
-todo: combine first/last name into seperate struct
+todo:
+- fix update patient func
+- generate unique patient id's
+- combine first/last name into seperate struct
+
 */
 
 import (
@@ -9,12 +13,12 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"strconv"
+	//"strconv"
+	//"context"
 
 	"github.com/gorilla/mux"
-	"go.mongodb.org/mongo-driver/bson"
-    "go.mongodb.org/mongo-driver/mongo"
-    "go.mongodb.org/mongo-driver/mongo/options"
+	"database/sql"
+	_"github.com/go-sql-driver/mysql"
 )
 
 type Patient struct {
@@ -32,8 +36,30 @@ func homeLink(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "home")
 }
 
+func checkErr(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
 func getPatients(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
+	var patients []Patient
+
+	result, err := db.Query("SELECT * from patient")
+	checkErr(err)
+
+	defer result.Close();
+
+	for result.Next() {
+		var patient Patient
+		err := result.Scan(&patient.ID, &patient.FirstName, &patient.LastName, &patient.Diagnosis, &patient.Physician, &patient.DOV)
+		checkErr(err)
+
+		patients = append(patients, patient)
+	}
+
 	json.NewEncoder(w).Encode(patients)
 
 }
@@ -53,13 +79,29 @@ func getPatient(w http.ResponseWriter, r *http.Request) {
 func createPatient(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	var newPatient Patient
-	json.NewDecoder(r.Body).Decode(&newPatient)
-	newPatient.ID = strconv.Itoa(len(patients) + 1)
+	//
+	id := r.FormValue("id")
+	firstName := r.FormValue("firstName")
+	lastName := r.FormValue("lastName")
+	diagnosis := r.FormValue("diagnosis")
+	physician := r.FormValue("physician")
+	dov := r.FormValue("dov")
 
-	patients = append(patients, newPatient)
+	stmt, err := db.Prepare("INSERT INTO patient VALUES(?,?,?,?,?,?)")
+	checkErr(err)
 
-	json.NewEncoder(w).Encode(newPatient)
+	_, err = stmt.Exec(id, firstName, lastName, diagnosis, physician, dov)
+	checkErr(err)
+
+	fmt.Fprintln(w, id, firstName, lastName)
+
+	// var newPatient Patient
+	// json.NewDecoder(r.Body).Decode(&newPatient)
+	// newPatient.ID = strconv.Itoa(len(patients) + 1)
+
+	// patients = append(patients, newPatient)
+
+	// json.NewEncoder(w).Encode(newPatient)
 }
 
 func updatePatient(w http.ResponseWriter, r *http.Request) {
@@ -67,7 +109,10 @@ func updatePatient(w http.ResponseWriter, r *http.Request) {
 
 	params := mux.Vars(r)
 
+	stmt, err = db.Prepare("UPDATE patient SET ")
+
 	for i, item := range patients {
+		// check if id matches
 		if item.ID == params["id"] {
 			// remove patient for update
 			patients = append(patients[:i], patients[i+1:]...)
@@ -88,21 +133,40 @@ func deletePatient(w http.ResponseWriter, r *http.Request) {
 
 	params := mux.Vars(r)
 
-	for i, item := range patients {
-		if item.ID == params["id"] {
-			patients = append(patients[:i], patients[i+1:]...)
-			break
-		}
-	}
+	stmt, err := db.Prepare("DELETE FROM patient WHERE id = ?")
+	checkErr(err)
 
-	json.NewEncoder(w).Encode(patients)
+	_, err = stmt.Exec(params["id"])
+	checkErr(err)
+
+	// for i, item := range patients {
+	// 	if item.ID == params["id"] {
+	// 		patients = append(patients[:i], patients[i+1:]...)
+	// 		break
+	// 	}
+	// }
+	//
+	// json.NewEncoder(w).Encode(patients)
 }
 
+var db *sql.DB
+var err error
+
 func main() {
-	patients = append(patients, 
-		Patient{ID: "1", FirstName: "David", LastName: "Feng", Diagnosis: "asd", Physician: "Dr.as", DOV: "asdas"},
-		Patient{ID: "2", FirstName: "test", LastName: "t", Diagnosis: "asd", Physician: "Dr.as", DOV: "sfds"},
-	)
+	// db connection
+	db, err = sql.Open("mysql", "root:abcd1234@tcp(127.0.0.1:3306)/rest_api")
+
+	if err != nil {
+		panic(err.Error())
+	}
+
+	defer db.Close();
+
+	// test data
+	// patients = append(patients, 
+	// 	Patient{ID: "1", FirstName: "David", LastName: "Feng", Diagnosis: "asd", Physician: "Dr.as", DOV: "asdas"},
+	// 	Patient{ID: "2", FirstName: "test", LastName: "t", Diagnosis: "asd", Physician: "Dr.as", DOV: "sfds"},
+	// )
 
 	router := mux.NewRouter()
 
