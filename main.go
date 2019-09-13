@@ -13,6 +13,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"io/ioutil"
+	"math/rand"
 	//"strconv"
 	//"context"
 
@@ -52,8 +54,9 @@ func getPatients(w http.ResponseWriter, r *http.Request) {
 
 	defer result.Close();
 
+	var patient Patient
+
 	for result.Next() {
-		var patient Patient
 		err := result.Scan(&patient.ID, &patient.FirstName, &patient.LastName, &patient.Diagnosis, &patient.Physician, &patient.DOV)
 		checkErr(err)
 
@@ -61,47 +64,68 @@ func getPatients(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(patients)
-
 }
 
 func getPatient(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
+	var patients []Patient
+
 	params := mux.Vars(r)
 
-	for _, item := range patients {
-		if item.ID == params["id"] {
-			json.NewEncoder(w).Encode(item)
-			return
-		}
+	result, err := db.Query("SELECT * from patient WHERE id = ?", params["id"])
+	checkErr(err)
+
+	defer result.Close()
+
+	var patient Patient
+
+	for result.Next() {
+		err := result.Scan(&patient.ID, &patient.FirstName, &patient.LastName, &patient.Diagnosis, &patient.Physician, &patient.DOV)
+		checkErr(err)
+
+		patients = append(patients, patient)
 	}
+
+	json.NewEncoder(w).Encode(patients)
 }
 
 func createPatient(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	//
-	id := r.FormValue("id")
 	firstName := r.FormValue("firstName")
 	lastName := r.FormValue("lastName")
 	diagnosis := r.FormValue("diagnosis")
 	physician := r.FormValue("physician")
 	dov := r.FormValue("dov")
 
+	var patient Patient
+	var randID int
+	numRows := 0
+	
+	// create unique ID
+	for unique := true; unique; unique = (numRows != 0) {
+		// generate random ID
+		randID = rand.Intn(1000000000)
+
+		result, err := db.Query("SELECT id from patient WHERE id = ?", randID)
+		checkErr(err)
+
+		// check if ID is unique
+		for result.Next() {
+			numRows++
+			err := result.Scan(&patient.ID)
+			checkErr(err)
+		}	
+	}
+
 	stmt, err := db.Prepare("INSERT INTO patient VALUES(?,?,?,?,?,?)")
 	checkErr(err)
 
-	_, err = stmt.Exec(id, firstName, lastName, diagnosis, physician, dov)
+	_, err = stmt.Exec(randID, firstName, lastName, diagnosis, physician, dov)
 	checkErr(err)
 
-	fmt.Fprintln(w, id, firstName, lastName)
-
-	// var newPatient Patient
-	// json.NewDecoder(r.Body).Decode(&newPatient)
-	// newPatient.ID = strconv.Itoa(len(patients) + 1)
-
-	// patients = append(patients, newPatient)
-
-	// json.NewEncoder(w).Encode(newPatient)
+	fmt.Fprintln(w, randID, firstName, lastName)
 }
 
 func updatePatient(w http.ResponseWriter, r *http.Request) {
@@ -109,23 +133,20 @@ func updatePatient(w http.ResponseWriter, r *http.Request) {
 
 	params := mux.Vars(r)
 
-	stmt, err = db.Prepare("UPDATE patient SET ")
+	// updates first name
+	stmt, err := db.Prepare("UPDATE patient SET first_name = ? WHERE id = ?")
+	checkErr(err)
 
-	for i, item := range patients {
-		// check if id matches
-		if item.ID == params["id"] {
-			// remove patient for update
-			patients = append(patients[:i], patients[i+1:]...)
+	body, err := ioutil.ReadAll(r.Body)
+	checkErr(err)
 
-			var newPatient Patient
-			json.NewDecoder(r.Body).Decode(&newPatient)
-			newPatient.ID = params["id"]
-			patients = append(patients, newPatient)
+	keyVal := make(map[string]string)
+	json.Unmarshal(body, &keyVal)
 
-			json.NewEncoder(w).Encode(newPatient)
-			return
-		}
-	}
+	newFirstName := keyVal["firstName"]
+
+	_, err = stmt.Exec(newFirstName, params["id"])
+	checkErr(err)
 }
 
 func deletePatient(w http.ResponseWriter, r *http.Request) {
@@ -138,15 +159,6 @@ func deletePatient(w http.ResponseWriter, r *http.Request) {
 
 	_, err = stmt.Exec(params["id"])
 	checkErr(err)
-
-	// for i, item := range patients {
-	// 	if item.ID == params["id"] {
-	// 		patients = append(patients[:i], patients[i+1:]...)
-	// 		break
-	// 	}
-	// }
-	//
-	// json.NewEncoder(w).Encode(patients)
 }
 
 var db *sql.DB
@@ -161,12 +173,6 @@ func main() {
 	}
 
 	defer db.Close();
-
-	// test data
-	// patients = append(patients, 
-	// 	Patient{ID: "1", FirstName: "David", LastName: "Feng", Diagnosis: "asd", Physician: "Dr.as", DOV: "asdas"},
-	// 	Patient{ID: "2", FirstName: "test", LastName: "t", Diagnosis: "asd", Physician: "Dr.as", DOV: "sfds"},
-	// )
 
 	router := mux.NewRouter()
 
