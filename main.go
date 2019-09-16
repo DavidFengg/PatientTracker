@@ -15,10 +15,9 @@ import (
 	"net/http"
 	"io/ioutil"
 	"math/rand"
-	//"strconv"
-	//"context"
 
 	"github.com/gorilla/mux"
+	"github.com/gorilla/handlers"
 	"database/sql"
 	_"github.com/go-sql-driver/mysql"
 )
@@ -38,6 +37,10 @@ func homeLink(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "home")
 }
 
+func enableCORS(w *http.ResponseWriter) {
+	(*w).Header().Set("Access-Control-Allow-Origin", "*")
+}
+
 func checkErr(err error) {
 	if err != nil {
 		panic(err)
@@ -46,6 +49,7 @@ func checkErr(err error) {
 
 func getPatients(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	enableCORS(&w)
 
 	var patients []Patient
 
@@ -68,6 +72,7 @@ func getPatients(w http.ResponseWriter, r *http.Request) {
 
 func getPatient(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	enableCORS(&w)
 
 	var patients []Patient
 
@@ -91,13 +96,20 @@ func getPatient(w http.ResponseWriter, r *http.Request) {
 }
 
 func createPatient(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/x-www-form-urlencoded")
+	enableCORS(&w)
 
-	firstName := r.FormValue("firstName")
-	lastName := r.FormValue("lastName")
-	diagnosis := r.FormValue("diagnosis")
-	physician := r.FormValue("physician")
-	dov := r.FormValue("dov")
+	body, err := ioutil.ReadAll(r.Body)
+	checkErr(err)
+
+	keyVal := make(map[string]string)
+	json.Unmarshal(body, &keyVal)
+
+	firstName := keyVal["firstName"]
+	lastName := keyVal["lastName"]
+	diagnosis := keyVal["diagnosis"]
+	physician := keyVal["physician"]
+	dov := keyVal["dov"]
 
 	var patient Patient
 	var randID int
@@ -129,12 +141,13 @@ func createPatient(w http.ResponseWriter, r *http.Request) {
 }
 
 func updatePatient(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/x-www-form-urlencoded")
+	enableCORS(&w)
 
 	params := mux.Vars(r)
 
 	// updates first name
-	stmt, err := db.Prepare("UPDATE patient SET first_name = ? WHERE id = ?")
+	stmt, err := db.Prepare("UPDATE patient SET first_name = ?, last_name = ?, diagnosis = ?, physician = ?, dov = ? WHERE id = ?")
 	checkErr(err)
 
 	body, err := ioutil.ReadAll(r.Body)
@@ -144,13 +157,18 @@ func updatePatient(w http.ResponseWriter, r *http.Request) {
 	json.Unmarshal(body, &keyVal)
 
 	newFirstName := keyVal["firstName"]
+	newLastName := keyVal["lastName"]
+	newDiagnosis := keyVal["diagnosis"]
+	newPhysician := keyVal["physician"]
+	newDOV := keyVal["dov"]
 
-	_, err = stmt.Exec(newFirstName, params["id"])
+	_, err = stmt.Exec(newFirstName, newLastName, newDiagnosis, newPhysician, newDOV, params["id"])
 	checkErr(err)
 }
 
 func deletePatient(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	enableCORS(&w)
 
 	params := mux.Vars(r)
 
@@ -175,14 +193,16 @@ func main() {
 	defer db.Close();
 
 	router := mux.NewRouter()
+	headers := handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"})
+	methods := handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE"})
+	origins := handlers.AllowedOrigins([]string{"*"})
 
 	//routing
-	router.HandleFunc("/", homeLink)
-	router.HandleFunc("/api/patient", getPatients).Methods("GET")
-	router.HandleFunc("/api/patient/{id}", getPatient).Methods("GET")
-	router.HandleFunc("/api/patient", createPatient).Methods("POST")
-	router.HandleFunc("/api/patient/{id}", updatePatient).Methods("PUT")	
-	router.HandleFunc("/api/patient/{id}", deletePatient).Methods("DELETE")	
+	router.HandleFunc("/patient", getPatients).Methods("GET")
+	router.HandleFunc("/patient/{id}", getPatient).Methods("GET")
+	router.HandleFunc("/patient", createPatient).Methods("POST")
+	router.HandleFunc("/patient/{id}", updatePatient).Methods("PUT")	
+	router.HandleFunc("/patient/{id}", deletePatient).Methods("DELETE")	
 
-	log.Fatal(http.ListenAndServe(":8080", router))
+	log.Fatal(http.ListenAndServe(":8080", handlers.CORS(headers, methods, origins)(router)))
 }
