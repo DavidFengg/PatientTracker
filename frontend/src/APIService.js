@@ -20,7 +20,7 @@ export default {
             firstName: data.firstName,
             lastName: data.lastName,
             diagnosis: data.diagnosis,
-            physician: data.Physcian,
+            physician: data.physician,
             dov: data.dov
         }).then(res => {
             console.log(res.data);
