@@ -15,13 +15,13 @@ export default {
         })
     },
 
-    createPatient(fName, lName, diag, phys, date) {
+    createPatient(data) {
         return axios.post(API_URL, {
-            firstName: fName,
-            lastName: lName,
-            diagnosis: diag,
-            physician: phys,
-            dov: date
+            firstName: data.firstName,
+            lastName: data.lastName,
+            diagnosis: data.diagnosis,
+            physician: data.Physcian,
+            dov: data.dov
         }).then(res => {
             console.log(res.data);
         }).catch(error => console.log(error));

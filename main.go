@@ -1,13 +1,5 @@
 package main
 
-/*
-todo:
-- fix update patient func
-- generate unique patient id's
-- combine first/last name into seperate struct
-
-*/
-
 import (
 	"fmt"
 	"encoding/json"
@@ -32,10 +24,6 @@ type Patient struct {
 }
 
 var patients []Patient
-
-func homeLink(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "home")
-}
 
 func enableCORS(w *http.ResponseWriter) {
 	(*w).Header().Set("Access-Control-Allow-Origin", "*")
@@ -146,7 +134,7 @@ func updatePatient(w http.ResponseWriter, r *http.Request) {
 
 	params := mux.Vars(r)
 
-	// updates first name
+	// update each field
 	stmt, err := db.Prepare("UPDATE patient SET first_name = ?, last_name = ?, diagnosis = ?, physician = ?, dov = ? WHERE id = ?")
 	checkErr(err)
 

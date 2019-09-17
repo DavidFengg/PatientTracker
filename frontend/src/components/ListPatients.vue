@@ -1,6 +1,6 @@
 <template>
     <div>
-        <h1>Patients</h1>
+        <h1>Patient List</h1>
 
         <table class="table table-hover">
             <thead>
@@ -116,10 +116,7 @@
 </template>
 
 <script>
-    import axios from 'axios';
     import APIService from '../APIService';
-
-    const API_URL = 'http://localhost:8080/patient';
 
     export default {
         name: 'Patients',
@@ -159,13 +156,15 @@
             },
 
             addPatient() {
-                APIService.createPatient(this.input.firstName, this.input.lastName, this.input.diagnosis, this.input.physician, this.input.dov).then(res => {
+                APIService.createPatient(this.input).then(res => {
                     this.getPatients();
                 });
             },
 
             updatePlaceholder(patient) {
-                this.edit = patient;
+                // copy patient object data
+                let copyData = JSON.parse(JSON.stringify(patient));
+                this.edit = copyData;
             },
 
             updatePatient() {
