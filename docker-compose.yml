@@ -1,0 +1,38 @@
+version: '3.7'
+
+services:
+  # api:
+  #   image: golang:latest
+  #   volumes:
+  #     - .:/go/src/go-with-compose
+  #   working_dir: /go/src/go-with-compose
+  #   command: go run main.go
+  
+  # app:
+  #   build:
+  #     context: .
+  #     dockerfile: ./frontend/Dockerfile
+  #   container_name: frontend
+  #   volumes:
+  #     - '.:/app'
+  #     - '/app/node_modules'
+  #   ports:
+  #     - '8080:8080'
+
+  db:
+    image: mysql:5.7
+    container_name: db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: rest_api
+      MYSQL_ROOT_HOST: '%'
+      MYSQL_ROOT_PASSWORD: abcd1234
+    ports:
+      - "3306:3306"
+    expose:
+      - '3306'
+#     volumes:
+#       - db_data:/var/lib/mysql
+
+# volumes:
+#   db_data: {}

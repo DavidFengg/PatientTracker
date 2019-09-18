@@ -178,6 +178,8 @@ func main() {
 		panic(err.Error())
 	}
 
+	fmt.Println("Connection made")
+
 	defer db.Close();
 
 	router := mux.NewRouter()
@@ -192,5 +194,5 @@ func main() {
 	router.HandleFunc("/patient/{id}", updatePatient).Methods("PUT")	
 	router.HandleFunc("/patient/{id}", deletePatient).Methods("DELETE")	
 
-	log.Fatal(http.ListenAndServe(":8080", handlers.CORS(headers, methods, origins)(router)))
+	log.Fatal(http.ListenAndServe(":8000", handlers.CORS(headers, methods, origins)(router)))
 }
