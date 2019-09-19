@@ -34,32 +34,32 @@
                 <tr>
                     <td colspan="2">
                         <div class="input-field">
-                        <label for="lname">First Name</label>
+                        <label>First Name</label>
                         <input placeholder="" v-model="input.firstName" type="text">
                         </div>
                     </td>
                     <td>
                         <div class="input-field">
-                        <label for="fname">Last Name</label>
+                        <label>Last Name</label>
                         <input placeholder="" v-model="input.lastName" type="text">
                         </div>
                     </td>
                     <td>
                         <div class="input-field">
-                        <label for="age">Diagnosis</label>
+                        <label>Diagnosis</label>
                         <input placeholder="" v-model="input.diagnosis" type="text">
                         </div>
                     </td>
                     <td>
                         <div class="input-field">
-                        <label for="job">Physician</label>
+                        <label>Physician</label>
                         <input placeholder="" v-model="input.physician" type="text">
                         </div>
                     </td>
                     <td>
                         <div class="input-field">
-                        <label for="address">Date of Visit</label>
-                        <input placeholder="" v-model="input.dov" id="address" type="text">
+                        <label>Date of Visit</label>
+                        <input :placeholder= "input.dov" v-model="input.dov" type="text">
                         </div>
                     </td>
                     <td>
@@ -115,8 +115,17 @@
 
 </template>
 
+<style scoped>
+    .input-field input[type=text] {
+        text-align: center;
+    }
+</style>
+
 <script>
     import APIService from '../APIService';
+
+    let today = new Date();
+    let date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
 
     export default {
         name: 'Patients',
@@ -140,7 +149,7 @@
                     lastName: "",
                     diagnosis: "",
                     physician: "",
-                    dov: ""
+                    dov: date
                 }
             };
         },
