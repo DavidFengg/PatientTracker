@@ -1,23 +1,26 @@
 version: '3.7'
 
 services:
-  # api:
-  #   image: golang:latest
-  #   volumes:
-  #     - .:/go/src/go-with-compose
-  #   working_dir: /go/src/go-with-compose
-  #   command: go run main.go
+  api:
+    build: .
+    container_name: api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"    
   
-  # app:
-  #   build:
-  #     context: .
-  #     dockerfile: ./frontend/Dockerfile
-  #   container_name: frontend
-  #   volumes:
-  #     - '.:/app'
-  #     - '/app/node_modules'
-  #   ports:
-  #     - '8080:8080'
+  app:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    restart: unless-stopped
+    volumes:
+      - './frontend:/app'
+      - 'app/node_modules'
+    ports:
+      - "8080:8080"
+    # environment:
+    #   - CHOKIDAR_USEPOLLING=true
 
   db:
     image: mysql:5.7
@@ -31,8 +34,8 @@ services:
       - "3306:3306"
     expose:
       - '3306'
-#     volumes:
-#       - db_data:/var/lib/mysql
+    volumes:
+      - db_data:/var/lib/mysql
 
-# volumes:
-#   db_data: {}
+volumes:
+  db_data:

@@ -125,7 +125,7 @@ func createPatient(w http.ResponseWriter, r *http.Request) {
 	_, err = stmt.Exec(randID, firstName, lastName, diagnosis, physician, dov)
 	checkErr(err)
 
-	fmt.Fprintln(w, randID, firstName, lastName)
+	fmt.Println("New Entity Added")
 }
 
 func updatePatient(w http.ResponseWriter, r *http.Request) {
@@ -171,8 +171,8 @@ var db *sql.DB
 var err error
 
 func main() {
-	// db connection
-	db, err = sql.Open("mysql", "root:abcd1234@tcp(127.0.0.1:3306)/rest_api")
+	// db connection to local mac host
+	db, err = sql.Open("mysql", "root:abcd1234@tcp(docker.for.mac.localhost:3306)/rest_api")
 
 	if err != nil {
 		panic(err.Error())

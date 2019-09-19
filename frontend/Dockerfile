@@ -9,3 +9,4 @@ RUN npm install
 RUN npm install @vue/cli@3.11.0 -g
 
 CMD ["npm", "run", "serve"]
+# CMD ["npm", "start"]
