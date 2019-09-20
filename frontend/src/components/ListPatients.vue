@@ -2,73 +2,54 @@
     <div>
         <h1>Patient List</h1>
 
-        <table class="table table-hover">
-            <thead>
-                <tr>
-                    <th>Medical #</th>
-                    <th>First Name</th>
-                    <th>Last Name</th>
-                    <th>Diagnosis</th>
-                    <th>Physician</th>
-                    <th>Date of Visit</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-
-            <tbody>
-                <!-- Display Patients -->
-                <tr v-for="patient in patients">
-                    <th> {{ patient.id }} </th>
-                    <th> {{ patient.firstName }} </th>
-                    <th> {{ patient.lastName }} </th>
-                    <td> {{ patient.diagnosis }} </td>
-                    <td> {{ patient.physician }} </td>
-                    <td> {{ patient.dov }} </td>
-                    <td>
-                        <b-button size="sm" class="mx-1" v-b-modal="'edit'" v-on:click="updatePlaceholder(patient)">Edit</b-button>
-                        <b-button size="sm" class="mx-1" v-on:click="deletePatient(patient.id)"> Delete </b-button>
-                    </td>
-                </tr>
-
-                <!-- Add Patient -->
-                <tr>
-                    <td colspan="2">
+        <!-- Patient Table -->
+        <b-table hover :items="patients" :fields="fields">
+            <template v-slot:cell(action)="data">
+                <b-button size="sm" class="mx-1" v-b-modal="'edit'" v-on:click="updatePlaceholder(data.item)">Edit</b-button>
+                <b-button size="sm" class="mx-1" v-on:click="deletePatient(data.item.id)"> Delete </b-button>
+            </template>
+        </b-table>
+    
+        <!-- Add Patient -->
+        <b-table-simple hover> 
+            <b-tbody>
+                <b-tr>
+                    <b-td colspan="2">
                         <div class="input-field">
                         <label>First Name</label>
                         <input placeholder="" v-model="input.firstName" type="text">
                         </div>
-                    </td>
-                    <td>
+                    </b-td>
+                    <b-td>
                         <div class="input-field">
                         <label>Last Name</label>
                         <input placeholder="" v-model="input.lastName" type="text">
                         </div>
-                    </td>
-                    <td>
+                    </b-td>
+                    <b-td>
                         <div class="input-field">
                         <label>Diagnosis</label>
                         <input placeholder="" v-model="input.diagnosis" type="text">
                         </div>
-                    </td>
-                    <td>
+                    </b-td>
+                    <b-td>
                         <div class="input-field">
                         <label>Physician</label>
                         <input placeholder="" v-model="input.physician" type="text">
                         </div>
-                    </td>
-                    <td>
+                    </b-td>
+                    <b-td>
                         <div class="input-field">
                         <label>Date of Visit</label>
                         <input :placeholder= "input.dov" v-model="input.dov" type="text">
                         </div>
-                    </td>
-                    <td>
-                        <b-button size="sm" v-on:click="addPatient()"> Add </b-button>
-                    </td>
-                </tr>
-            </tbody>
-
-        </table>
+                    </b-td>
+                    <b-td>
+                        <b-button class="button" size="sm" v-on:click="addPatient()"> Add </b-button>
+                    </b-td>
+                </b-tr>
+            </b-tbody>
+        </b-table-simple>
 
         <!-- Edit Modal -->
         <b-modal id="edit" title="Edit Patient Data">
@@ -107,17 +88,25 @@
                 </b-form-input>
             </b-form-group>
 
-        <b-button class="btn btn-primary" v-on:click="updatePatient()">Confirm</b-button>
+            <b-button class="btn btn-primary" v-on:click="updatePatient()">Confirm</b-button>
 
         </b-modal>
+        
+        <!-- Error Handling -->
+        <b-alert v-model="showAlert" variant="danger"> Please fill in all fields </b-alert>
 
     </div>
-
 </template>
 
 <style scoped>
     .input-field input[type=text] {
         text-align: center;
+    }
+
+    .button {
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
 </style>
 
@@ -135,6 +124,38 @@
 
         data() {
             return {
+                fields: [
+                    {
+                        key: "id",
+                        label: "Medical #",
+                        sortable: true
+                    },
+                    {
+                        key: "firstName",
+                        sortable: true
+                    },
+                    {
+                        key: "lastName",
+                        sortable: true
+                    },
+                    {
+                        key: "diagnosis",
+                        sortable: true
+                    },
+                    {
+                        key: "physician",
+                        sortable: true
+                    },
+                    {
+                        key: "dov",
+                        label: "Date of Visit",
+                        sortable: true
+                    },
+                    {
+                        key: 'action',
+                        sortable: false
+                    }
+                ],
                 patients: [],
                 edit: {
                     id: 0,
@@ -150,7 +171,8 @@
                     diagnosis: "",
                     physician: "",
                     dov: date
-                }
+                },
+                showAlert: false
             };
         },
 
@@ -165,9 +187,22 @@
             },
 
             addPatient() {
-                APIService.createPatient(this.input).then(res => {
-                    this.getPatients();
-                });
+                let input = Object.values(this.input);
+
+                // check if each field is not empty
+                for (let value of input) {
+                    if (value == "") {
+                        this.showAlert = true;
+                        return;
+                    }
+                }
+                this.showAlert = false;
+
+                if (!this.showAlert) {
+                    APIService.createPatient(this.input).then(res => {
+                        this.getPatients();
+                    });
+                }
             },
 
             updatePlaceholder(patient) {
