@@ -1,19 +1,12 @@
 <template>
   <div id="app">
-    <PatientList/>
+    <div id="nav">
+      <router-link to="/">Home</router-link> |
+      <router-link to="/login">Login</router-link>
+    </div>
+    <router-view/>
   </div>
 </template>
-
-<script>
-import PatientList from './components/ListPatients.vue'
-
-export default {
-  name: 'app',
-  components: {
-    PatientList
-  }
-}
-</script>
 
 <style>
 #app {
