@@ -8,7 +8,8 @@ ADD . /app
 RUN go get github.com/gorilla/mux
 RUN go get github.com/gorilla/handlers
 RUN go get github.com/go-sql-driver/mysql
+RUN go get github.com/dgrijalva/jwt-go
 
-RUN go build ./main.go
+RUN go build -o main .
 
 CMD ["./main"]

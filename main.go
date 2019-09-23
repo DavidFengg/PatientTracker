@@ -12,6 +12,8 @@ import (
 	"github.com/gorilla/handlers"
 	"database/sql"
 	_"github.com/go-sql-driver/mysql"
+
+	jwt "github.com/dgrijalva/jwt-go"
 )
 
 type Patient struct {
@@ -23,10 +25,32 @@ type Patient struct {
 	DOV			string `json:"dov"`
 }
 
+var signingKey = []byte("secret")
 var patients []Patient
 
 func enableCORS(w *http.ResponseWriter) {
 	(*w).Header().Set("Access-Control-Allow-Origin", "*")
+}
+
+func isAuthorized(endpoint func(http.ResponseWriter, *http.Request)) http.Handler {
+	return http.HandlerFunc(func (w http.ResponseWriter, r *http.Request) {
+		if r.Header["Token"] != nil {
+			token, err := jwt.Parse(r.Header["Token"][0], func(token *jwt.Token) (interface{}, error) {
+				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+					return nil, fmt.Errorf("There was an error")
+				}
+				return signingKey, nil
+			})
+
+			checkErr(err)
+			fmt.Println("ok")
+			if token.Valid {
+				endpoint(w, r)
+			}
+		} else {
+			fmt.Println("Not Authorized")
+		}
+	})
 }
 
 func checkErr(err error) {
@@ -165,6 +189,8 @@ func deletePatient(w http.ResponseWriter, r *http.Request) {
 
 	_, err = stmt.Exec(params["id"])
 	checkErr(err)
+
+	fmt.Println("Entity deleted")
 }
 
 var db *sql.DB
@@ -173,6 +199,7 @@ var err error
 func main() {
 	// db connection to local mac host
 	db, err = sql.Open("mysql", "root:abcd1234@tcp(docker.for.mac.localhost:3306)/rest_api")
+	// db, err = sql.Open("mysql", "root:abcd1234@tcp(localhost:3306)/rest_api")
 
 	if err != nil {
 		panic(err.Error())
@@ -188,7 +215,8 @@ func main() {
 	origins := handlers.AllowedOrigins([]string{"*"})
 
 	//routing
-	router.HandleFunc("/patient", getPatients).Methods("GET")
+	router.Handle("/patient", isAuthorized(getPatients)).Methods("GET")
+	// router.HandleFunc("/patient", getPatients).Methods("GET")
 	router.HandleFunc("/patient/{id}", getPatient).Methods("GET")
 	router.HandleFunc("/patient", createPatient).Methods("POST")
 	router.HandleFunc("/patient/{id}", updatePatient).Methods("PUT")	
