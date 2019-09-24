@@ -7,13 +7,15 @@ import (
 	"net/http"
 	"io/ioutil"
 	"math/rand"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/handlers"
 	"database/sql"
 	_"github.com/go-sql-driver/mysql"
 
-	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/dgrijalva/jwt-go"
+	// jwt "github.com/dgrijalva/jwt-go"
 )
 
 type Patient struct {
@@ -25,11 +27,67 @@ type Patient struct {
 	DOV			string `json:"dov"`
 }
 
+type Credentials struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type Claims struct {
+	Username string `json:"username"`
+	jwt.StandardClaims
+}
+
+//temp
+var users = map[string]string {
+	"test": "test",
+}
+
 var signingKey = []byte("secret")
 var patients []Patient
 
 func enableCORS(w *http.ResponseWriter) {
 	(*w).Header().Set("Access-Control-Allow-Origin", "*")
+}
+
+func login(w http.ResponseWriter, r *http.Request) {
+	var creds Credentials
+
+	err := json.NewDecoder(r.Body).Decode(&creds)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	expectedPassword, ok := users[creds.Username]
+
+	if !ok || expectedPassword != creds.Password {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	expirationTime := time.Now().Add(2 * time.Hour)
+
+	claims := &Claims{
+		Username: creds.Username,
+		StandardClaims: jwt.StandardClaims {
+			ExpiresAt: expirationTime.Unix(),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	tokenString, err := token.SignedString(signingKey)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	http.SetCookie(w, &http.Cookie {
+		Name: "token",
+		Value: tokenString,
+		Expires: expirationTime,
+	})
+
 }
 
 func isAuthorized(endpoint func(http.ResponseWriter, *http.Request)) http.Handler {
@@ -215,6 +273,7 @@ func main() {
 	origins := handlers.AllowedOrigins([]string{"*"})
 
 	//routing
+	router.HandleFunc("/login", login).Methods("POST")
 	router.Handle("/patient", isAuthorized(getPatients)).Methods("GET")
 	// router.HandleFunc("/patient", getPatients).Methods("GET")
 	router.HandleFunc("/patient/{id}", getPatient).Methods("GET")

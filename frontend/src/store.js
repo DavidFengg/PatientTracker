@@ -4,48 +4,71 @@ import axios from 'axios'
 
 Vue.use(Vuex)
 
+const AUTH_URL = 'http://localhost:8000/login';
+
 export default new Vuex.Store({
   state: {
-    accessToken: localStorage.getItem('access_token') || '',
-    status: {}
+    accessToken: localStorage.getItem('token') || '',
+    user: {},
+    status: ''
   },
   mutations: {
-    request(state) {
+    auth_request(state) {
       state.status = 'loading';
     },
 
-    sucess(state, token) {
+    auth_success(state, token, user) {
       state.status = 'success';
       state.accessToken = token;
+      state.user = user;
     },
 
-    error(state) {
+    auth_error(state) {
       state.status = 'error';
+    },
+
+    logout(state) {
+      state.status = '';
+      state.accessToken = '';
     }
 
   },
   actions: {
     login({commit}, user) {
       return new Promise((resolve, reject) => {
-        commit(login);
-        axios({url: 'auth', data: user, method: 'POST'}).then(resp => {
+        commit('auth_request');
+        axios({url: AUTH_URL, data: user, method: 'POST'}).then(resp => {
           const token = resp.data.token;
-          localStorage.setItem('user-token', token);
-          commit(success, token);
+          const user = resp.data.user;
+
+          localStorage.setItem('token', token);
+          axios.defaults.headers.common['Authorization'] = token
+
+          commit('auth_success', token, user);
           
-          dispatch(request);
           resolve(resp);
         })
         .catch(err => {
-          commit(error, err);
-          localStorage.removeItem('user-token');
+          commit('auth_error');
+          localStorage.removeItem('token');
           reject(err);
         })
       });
     },
 
     logout() {
-      this.$store.dispatch()
+      return new Promise((resolve, reject) => {
+          commit('logout');
+          localStorage.removeItem('token');
+
+          delete axios.defaults.headers.common['Authorization'];
+          resolve();
+      });
     }
+  },
+
+  getters: {
+    isLoggedIn: state => state.token,
+    authStatus: state => state.status
   }
 })

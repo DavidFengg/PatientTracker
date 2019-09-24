@@ -32,8 +32,9 @@ export default {
             let username = this.username;
             let password = this.password;
 
-            console.log(username, password);
-            // this.$store.dispatch('login', {username, password}).then(res => this.$router.push('/'));
+            this.$store.dispatch('login', {username, password})
+            .then(() => this.$router.push('/'))
+            .catch(err => console.log(err));
         }
     }
 }
