@@ -14,8 +14,8 @@ import (
 	"database/sql"
 	_"github.com/go-sql-driver/mysql"
 
-	"github.com/dgrijalva/jwt-go"
-	// jwt "github.com/dgrijalva/jwt-go"
+	// "github.com/dgrijalva/jwt-go"
+	jwt "github.com/dgrijalva/jwt-go"
 )
 
 type Patient struct {
@@ -37,7 +37,14 @@ type Claims struct {
 	jwt.StandardClaims
 }
 
-//temp
+type Response struct {
+	Token string `json:"token"`
+	Username string `json:"user"`
+}
+
+/* ** TEMP **
+	temporary store valid user creds
+*/
 var users = map[string]string {
 	"test": "test",
 }
@@ -65,7 +72,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	expirationTime := time.Now().Add(2 * time.Hour)
+	expirationTime := time.Now().Add(2 * time.Minute)
 
 	claims := &Claims{
 		Username: creds.Username,
@@ -82,34 +89,39 @@ func login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.SetCookie(w, &http.Cookie {
-		Name: "token",
-		Value: tokenString,
-		Expires: expirationTime,
-	})
+	fmt.Println(creds.Username)
 
+	res := Response{tokenString, creds.Username}
+
+	json.NewEncoder(w).Encode(res)
+
+	// http.SetCookie(w, &http.Cookie {
+	// 	Name: "token",
+	// 	Value: tokenString,
+	// 	Expires: expirationTime,
+	// })
 }
 
-func isAuthorized(endpoint func(http.ResponseWriter, *http.Request)) http.Handler {
-	return http.HandlerFunc(func (w http.ResponseWriter, r *http.Request) {
-		if r.Header["Token"] != nil {
-			token, err := jwt.Parse(r.Header["Token"][0], func(token *jwt.Token) (interface{}, error) {
-				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-					return nil, fmt.Errorf("There was an error")
-				}
-				return signingKey, nil
-			})
+// func isAuthorized(endpoint func(http.ResponseWriter, *http.Request)) http.Handler {
+// 	return http.HandlerFunc(func (w http.ResponseWriter, r *http.Request) {
+// 		if r.Header["token"] != nil {
+// 			token, err := jwt.Parse(r.Header["token"][0], func(token *jwt.Token) (interface{}, error) {
+// 				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+// 					return nil, fmt.Errorf("There was an error")
+// 				}
+// 				return signingKey, nil
+// 			})
 
-			checkErr(err)
-			fmt.Println("ok")
-			if token.Valid {
-				endpoint(w, r)
-			}
-		} else {
-			fmt.Println("Not Authorized")
-		}
-	})
-}
+// 			checkErr(err)
+// 			fmt.Println("ok")
+// 			if token.Valid {
+// 				endpoint(w, r)
+// 			}
+// 		} else {
+// 			fmt.Println("Not Authorized")
+// 		}
+// 	})
+// }
 
 func checkErr(err error) {
 	if err != nil {
@@ -257,7 +269,6 @@ var err error
 func main() {
 	// db connection to local mac host
 	db, err = sql.Open("mysql", "root:abcd1234@tcp(docker.for.mac.localhost:3306)/rest_api")
-	// db, err = sql.Open("mysql", "root:abcd1234@tcp(localhost:3306)/rest_api")
 
 	if err != nil {
 		panic(err.Error())
@@ -274,8 +285,7 @@ func main() {
 
 	//routing
 	router.HandleFunc("/login", login).Methods("POST")
-	router.Handle("/patient", isAuthorized(getPatients)).Methods("GET")
-	// router.HandleFunc("/patient", getPatients).Methods("GET")
+	router.HandleFunc("/patient", getPatients).Methods("GET")
 	router.HandleFunc("/patient/{id}", getPatient).Methods("GET")
 	router.HandleFunc("/patient", createPatient).Methods("POST")
 	router.HandleFunc("/patient/{id}", updatePatient).Methods("PUT")	

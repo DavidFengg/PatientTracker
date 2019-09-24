@@ -30,6 +30,7 @@ export default new Vuex.Store({
     logout(state) {
       state.status = '';
       state.accessToken = '';
+      state.user = {};
     }
 
   },
@@ -37,16 +38,20 @@ export default new Vuex.Store({
     login({commit}, user) {
       return new Promise((resolve, reject) => {
         commit('auth_request');
-        axios({url: AUTH_URL, data: user, method: 'POST'}).then(resp => {
-          const token = resp.data.token;
-          const user = resp.data.user;
 
+        // login axios request
+        axios.post(AUTH_URL, user).then(res => {
+          let token = res.data.token;
+          let user = res.data.user;
+          
+          // store token in local storage
           localStorage.setItem('token', token);
           axios.defaults.headers.common['Authorization'] = token
 
+          // set state variables
           commit('auth_success', token, user);
           
-          resolve(resp);
+          resolve(res);
         })
         .catch(err => {
           commit('auth_error');
@@ -56,8 +61,9 @@ export default new Vuex.Store({
       });
     },
 
-    logout() {
+    logout({commit}) {
       return new Promise((resolve, reject) => {
+          // set state variables and remove token from local storage
           commit('logout');
           localStorage.removeItem('token');
 
@@ -68,7 +74,7 @@ export default new Vuex.Store({
   },
 
   getters: {
-    isLoggedIn: state => state.token,
+    isLoggedIn: state => !!state.accessToken,
     authStatus: state => state.status
   }
 })
