@@ -4,48 +4,77 @@ import axios from 'axios'
 
 Vue.use(Vuex)
 
+const AUTH_URL = 'http://localhost:8000/login';
+
 export default new Vuex.Store({
   state: {
-    accessToken: localStorage.getItem('access_token') || '',
-    status: {}
+    accessToken: localStorage.getItem('token') || '',
+    user: {},
+    status: ''
   },
   mutations: {
-    request(state) {
+    auth_request(state) {
       state.status = 'loading';
     },
 
-    sucess(state, token) {
+    auth_success(state, token, user) {
       state.status = 'success';
       state.accessToken = token;
+      state.user = user;
     },
 
-    error(state) {
+    auth_error(state) {
       state.status = 'error';
+    },
+
+    logout(state) {
+      state.status = '';
+      state.accessToken = '';
+      state.user = {};
     }
 
   },
   actions: {
     login({commit}, user) {
       return new Promise((resolve, reject) => {
-        commit(login);
-        axios({url: 'auth', data: user, method: 'POST'}).then(resp => {
-          const token = resp.data.token;
-          localStorage.setItem('user-token', token);
-          commit(success, token);
+        commit('auth_request');
+
+        // login axios request
+        axios.post(AUTH_URL, user).then(res => {
+          let token = res.data.token;
+          let user = res.data.user;
           
-          dispatch(request);
-          resolve(resp);
+          // store token in local storage
+          localStorage.setItem('token', token);
+          axios.defaults.headers.common['Authorization'] = token
+
+          // set state variables
+          commit('auth_success', token, user);
+          
+          resolve(res);
         })
         .catch(err => {
-          commit(error, err);
-          localStorage.removeItem('user-token');
+          commit('auth_error');
+          localStorage.removeItem('token');
           reject(err);
         })
       });
     },
 
-    logout() {
-      this.$store.dispatch()
+    logout({commit}) {
+      return new Promise((resolve, reject) => {
+          // set state variables and remove token from local storage
+          commit('logout');
+          localStorage.removeItem('token');
+
+          delete axios.defaults.headers.common['Authorization'];
+          resolve();
+      });
     }
+  },
+
+  getters: {
+    isLoggedIn: state => !!state.accessToken,
+    authStatus: state => state.status
   }
 })
