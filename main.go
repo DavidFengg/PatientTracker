@@ -2,15 +2,18 @@ package main
 
 import (
 	"fmt"
-	"encoding/json"
-	"log"
-	"net/http"
-	"io/ioutil"
-	"math/rand"
-	"time"
+	// "encoding/json"
+	// "log"
+	// "net/http"
+	// "io/ioutil"
+	// "math/rand"
+	// "time"
 
-	"github.com/gorilla/mux"
-	"github.com/gorilla/handlers"
+	"github.com/davidfengg/restAPI/database"
+	"github.com/davidfengg/restAPI/route"
+
+	// "github.com/gorilla/mux"
+	// "github.com/gorilla/handlers"
 	"database/sql"
 	_"github.com/go-sql-driver/mysql"
 
@@ -18,14 +21,14 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 )
 
-type Patient struct {
-	ID			string `json:"id"`
-	FirstName   string `json:"firstName"`
-	LastName	string `json:"lastName"`
-	Diagnosis	string `json:"diagnosis"`
-	Physician	string `json:"physician"`
-	DOV			string `json:"dov"`
-}
+// type Patient struct {
+// 	ID			string `json:"id"`
+// 	FirstName   string `json:"firstName"`
+// 	LastName	string `json:"lastName"`
+// 	Diagnosis	string `json:"diagnosis"`
+// 	Physician	string `json:"physician"`
+// 	DOV			string `json:"dov"`
+// }
 
 type Credentials struct {
 	Username string `json:"username"`
@@ -50,85 +53,65 @@ var users = map[string]string {
 }
 
 var signingKey = []byte("secret")
-var patients []Patient
+// var patients []Patient
 
-func enableCORS(w *http.ResponseWriter) {
-	(*w).Header().Set("Access-Control-Allow-Origin", "*")
-}
-
-func login(w http.ResponseWriter, r *http.Request) {
-	var creds Credentials
-
-	err := json.NewDecoder(r.Body).Decode(&creds)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	expectedPassword, ok := users[creds.Username]
-
-	if !ok || expectedPassword != creds.Password {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
-
-	expirationTime := time.Now().Add(2 * time.Minute)
-
-	claims := &Claims{
-		Username: creds.Username,
-		StandardClaims: jwt.StandardClaims {
-			ExpiresAt: expirationTime.Unix(),
-		},
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	tokenString, err := token.SignedString(signingKey)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	fmt.Println(creds.Username)
-
-	res := Response{tokenString, creds.Username}
-
-	json.NewEncoder(w).Encode(res)
-
-	// http.SetCookie(w, &http.Cookie {
-	// 	Name: "token",
-	// 	Value: tokenString,
-	// 	Expires: expirationTime,
-	// })
-}
-
-// func isAuthorized(endpoint func(http.ResponseWriter, *http.Request)) http.Handler {
-// 	return http.HandlerFunc(func (w http.ResponseWriter, r *http.Request) {
-// 		if r.Header["token"] != nil {
-// 			token, err := jwt.Parse(r.Header["token"][0], func(token *jwt.Token) (interface{}, error) {
-// 				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-// 					return nil, fmt.Errorf("There was an error")
-// 				}
-// 				return signingKey, nil
-// 			})
-
-// 			checkErr(err)
-// 			fmt.Println("ok")
-// 			if token.Valid {
-// 				endpoint(w, r)
-// 			}
-// 		} else {
-// 			fmt.Println("Not Authorized")
-// 		}
-// 	})
+// func enableCORS(w *http.ResponseWriter) {
+// 	(*w).Header().Set("Access-Control-Allow-Origin", "*")
 // }
 
-func checkErr(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
+// func login(w http.ResponseWriter, r *http.Request) {
+// 	var creds Credentials
 
+// 	err := json.NewDecoder(r.Body).Decode(&creds)
+// 	if err != nil {
+// 		w.WriteHeader(http.StatusBadRequest)
+// 		return
+// 	}
+
+// 	expectedPassword, ok := users[creds.Username]
+
+// 	if !ok || expectedPassword != creds.Password {
+// 		w.WriteHeader(http.StatusUnauthorized)
+// 		return
+// 	}
+
+// 	expirationTime := time.Now().Add(2 * time.Minute)
+
+// 	claims := &Claims{
+// 		Username: creds.Username,
+// 		StandardClaims: jwt.StandardClaims {
+// 			ExpiresAt: expirationTime.Unix(),
+// 		},
+// 	}
+
+// 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+// 	tokenString, err := token.SignedString(signingKey)
+// 	if err != nil {
+// 		w.WriteHeader(http.StatusInternalServerError)
+// 		return
+// 	}
+
+// 	fmt.Println(creds.Username)
+
+// 	res := Response{tokenString, creds.Username}
+
+// 	json.NewEncoder(w).Encode(res)
+
+// 	// http.SetCookie(w, &http.Cookie {
+// 	// 	Name: "token",
+// 	// 	Value: tokenString,
+// 	// 	Expires: expirationTime,
+// 	// })
+// }
+
+// func checkErr(err error) {
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// }
+
+/*
 func getPatients(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	enableCORS(&w)
@@ -262,13 +245,14 @@ func deletePatient(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("Entity deleted")
 }
+*/
 
-var db *sql.DB
+// var db *sql.DB
 var err error
 
 func main() {
 	// db connection to local mac host
-	db, err = sql.Open("mysql", "root:abcd1234@tcp(docker.for.mac.localhost:3306)/rest_api")
+	database.Db, err = sql.Open("mysql", "root:abcd1234@tcp(docker.for.mac.localhost:3306)/rest_api")
 
 	if err != nil {
 		panic(err.Error())
@@ -276,8 +260,11 @@ func main() {
 
 	fmt.Println("Connection made")
 
-	defer db.Close();
+	route.GetRoutes()
 
+	defer database.Db.Close();
+
+	/*
 	router := mux.NewRouter()
 	headers := handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"})
 	methods := handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE"})
@@ -292,4 +279,5 @@ func main() {
 	router.HandleFunc("/patient/{id}", deletePatient).Methods("DELETE")	
 
 	log.Fatal(http.ListenAndServe(":8000", handlers.CORS(headers, methods, origins)(router)))
+	*/
 }
