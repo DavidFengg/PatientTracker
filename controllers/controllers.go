@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 
-	"database/sql"
+	// "database/sql"
 	_"github.com/go-sql-driver/mysql"
 
 	"github.com/gorilla/mux"
@@ -15,7 +15,7 @@ import (
 	"github.com/davidfengg/restAPI/database"
 )
 
-var db *sql.DB = database.Db
+var db = database.Db
 
 func enableCORS(w *http.ResponseWriter) {
 	(*w).Header().Set("Access-Control-Allow-Origin", "*")
