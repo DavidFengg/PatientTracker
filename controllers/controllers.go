@@ -15,8 +15,6 @@ import (
 	"github.com/davidfengg/restAPI/database"
 )
 
-var db = database.Db
-
 func enableCORS(w *http.ResponseWriter) {
 	(*w).Header().Set("Access-Control-Allow-Origin", "*")
 }
@@ -33,7 +31,7 @@ func GetPatients(w http.ResponseWriter, r *http.Request) {
 
 	var patients []models.Patient
 
-	result, err := db.Query("SELECT * from patient")
+	result, err := database.Db.Query("SELECT * from patient")
 	checkErr(err)
 
 	defer result.Close();
@@ -58,7 +56,7 @@ func GetPatient(w http.ResponseWriter, r *http.Request) {
 
 	params := mux.Vars(r)
 
-	result, err := db.Query("SELECT * from patient WHERE id = ?", params["id"])
+	result, err := database.Db.Query("SELECT * from patient WHERE id = ?", params["id"])
 	checkErr(err)
 
 	defer result.Close()
@@ -100,7 +98,7 @@ func CreatePatient(w http.ResponseWriter, r *http.Request) {
 		// generate random ID
 		randID = rand.Intn(1000000000)
 
-		result, err := db.Query("SELECT id from patient WHERE id = ?", randID)
+		result, err := database.Db.Query("SELECT id from patient WHERE id = ?", randID)
 		checkErr(err)
 
 		// check if ID is unique
@@ -111,7 +109,7 @@ func CreatePatient(w http.ResponseWriter, r *http.Request) {
 		}	
 	}
 
-	stmt, err := db.Prepare("INSERT INTO patient VALUES(?,?,?,?,?,?)")
+	stmt, err := database.Db.Prepare("INSERT INTO patient VALUES(?,?,?,?,?,?)")
 	checkErr(err)
 
 	_, err = stmt.Exec(randID, firstName, lastName, diagnosis, physician, dov)
@@ -127,7 +125,7 @@ func UpdatePatient(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
 	// update each field
-	stmt, err := db.Prepare("UPDATE patient SET first_name = ?, last_name = ?, diagnosis = ?, physician = ?, dov = ? WHERE id = ?")
+	stmt, err := database.Db.Prepare("UPDATE patient SET first_name = ?, last_name = ?, diagnosis = ?, physician = ?, dov = ? WHERE id = ?")
 	checkErr(err)
 
 	body, err := ioutil.ReadAll(r.Body)
@@ -152,7 +150,7 @@ func DeletePatient(w http.ResponseWriter, r *http.Request) {
 
 	params := mux.Vars(r)
 
-	stmt, err := db.Prepare("DELETE FROM patient WHERE id = ?")
+	stmt, err := database.Db.Prepare("DELETE FROM patient WHERE id = ?")
 	checkErr(err)
 
 	_, err = stmt.Exec(params["id"])
