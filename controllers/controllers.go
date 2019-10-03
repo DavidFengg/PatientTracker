@@ -7,11 +7,10 @@ import (
 	"io/ioutil"
 	"math/rand"
 
-	// "database/sql"
+	"github.com/gorilla/mux"
 	_"github.com/go-sql-driver/mysql"
 
-	"github.com/gorilla/mux"
-	models "github.com/davidfengg/restAPI/models"
+	"github.com/davidfengg/restAPI/models"
 	"github.com/davidfengg/restAPI/database"
 )
 
