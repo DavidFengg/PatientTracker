@@ -18,4 +18,4 @@ RUN go get github.com/davidfengg/restAPI/route
 
 RUN go build -o main .
 
-CMD ["./main"]
+CMD ["./main", "-ip=docker.for.mac.localhost:3306"]

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"flag"
 
 	"github.com/davidfengg/restAPI/database"
 	"github.com/davidfengg/restAPI/route"
@@ -11,10 +12,14 @@ import (
 )
 
 var err error
+// var ipAddress str
 
 func main() {
+	ipAddress := flag.String("ip", "localhost:3306", "IP Address")
+	flag.Parse()
+
 	// db connection to local mac host
-	database.Db, err = sql.Open("mysql", "root:abcd1234@tcp(docker.for.mac.localhost:3306)/rest_api")
+	database.Db, err = sql.Open("mysql", "root:abcd1234@tcp(" + *ipAddress + ")/rest_api")
 
 	if err != nil {
 		panic(err.Error())
