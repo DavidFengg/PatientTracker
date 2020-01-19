@@ -10,11 +10,11 @@ RUN go get github.com/gorilla/handlers
 RUN go get github.com/go-sql-driver/mysql
 RUN go get github.com/dgrijalva/jwt-go
 
-RUN go get github.com/davidfengg/restAPI/controllers
-RUN go get github.com/davidfengg/restAPI/database
-RUN go get github.com/davidfengg/restAPI/login
-RUN go get github.com/davidfengg/restAPI/models
-RUN go get github.com/davidfengg/restAPI/route
+RUN go get github.com/davidfengg/PatientTracker/controllers
+RUN go get github.com/davidfengg/PatientTracker/database
+RUN go get github.com/davidfengg/PatientTracker/login
+RUN go get github.com/davidfengg/PatientTracker/models
+RUN go get github.com/davidfengg/PatientTracker/route
 
 RUN go build -o main .
 

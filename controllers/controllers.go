@@ -10,8 +10,8 @@ import (
 	"github.com/gorilla/mux"
 	_"github.com/go-sql-driver/mysql"
 
-	"github.com/davidfengg/restAPI/models"
-	"github.com/davidfengg/restAPI/database"
+	"github.com/davidfengg/PatientTracker/models"
+	"github.com/davidfengg/PatientTracker/database"
 )
 
 func enableCORS(w *http.ResponseWriter) {

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"flag"
 
-	"github.com/davidfengg/restAPI/database"
-	"github.com/davidfengg/restAPI/route"
+	"github.com/davidfengg/PatientTracker/database"
+	"github.com/davidfengg/PatientTracker/route"
 
 	"database/sql"
 	_"github.com/go-sql-driver/mysql"

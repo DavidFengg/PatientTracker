@@ -6,8 +6,8 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/handlers"
-	controllers "github.com/davidfengg/restAPI/controllers"
-	login "github.com/davidfengg/restAPI/login"
+	controllers "github.com/davidfengg/PatientTracker/controllers"
+	login "github.com/davidfengg/PatientTracker/login"
 )
 
 func GetRoutes() {
